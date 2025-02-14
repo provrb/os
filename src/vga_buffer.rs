@@ -1,7 +1,7 @@
-use lazy_static::lazy_static;
 use core::fmt::{self};
-use volatile::Volatile;
+use lazy_static::lazy_static;
 use spin::Mutex;
+use volatile::Volatile;
 
 const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
@@ -25,7 +25,7 @@ enum Color {
     LightRed = 12,
     Pink = 13,
     Yellow = 14,
-    White = 15
+    White = 15,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -46,7 +46,7 @@ struct Char {
 
 #[repr(transparent)]
 struct Buffer {
-    chars: [[Volatile<Char>; BUFFER_WIDTH]; BUFFER_HEIGHT]
+    chars: [[Volatile<Char>; BUFFER_WIDTH]; BUFFER_HEIGHT],
 }
 
 pub struct Writer {
@@ -82,9 +82,9 @@ impl Writer {
     fn is_print(&self, byte: u8) -> bool {
         match byte {
             0x20..=0x7e | b'\n' => true, // valid ascii
-            _ => false
+            _ => false,
         }
-    } 
+    }
 
     pub fn write_string(&mut self, string: &str) {
         for byte in string.bytes() {
@@ -97,7 +97,7 @@ impl Writer {
     }
 
     pub fn new_line(&mut self) {
-        self.row_pos+=1;
+        self.row_pos += 1;
         self.column_pos = 0;
     }
 }
@@ -134,4 +134,3 @@ macro_rules! println {
     () => ($crate::print!("\n"));
     ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
 }
-
