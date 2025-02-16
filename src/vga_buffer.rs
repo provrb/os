@@ -9,7 +9,7 @@ const BUFFER_WIDTH: usize = 80;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]
 #[repr(u8)]
-enum Color {
+pub enum Color {
     Black = 0,
     Blue = 1,
     Green = 2,
@@ -30,9 +30,9 @@ enum Color {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
-struct ColorDesc(u8);
+pub struct ColorDesc(u8);
 impl ColorDesc {
-    fn new(foreground: Color, background: Color) -> ColorDesc {
+    pub const fn new(foreground: Color, background: Color) -> ColorDesc {
         ColorDesc((background as u8) << 4 | (foreground as u8))
     }
 }
@@ -122,6 +122,10 @@ lazy_static! {
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
     WRITER.lock().write_fmt(args).unwrap();
+}
+
+pub fn set_print_color(color: ColorDesc) {
+    WRITER.lock().color_desc = color;
 }
 
 #[macro_export]

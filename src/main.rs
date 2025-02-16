@@ -1,25 +1,36 @@
 #![no_std]
 #![no_main]
+
 #![feature(abi_x86_interrupt)]
 
-use core::panic::PanicInfo;
-use gdt::init_gdt;
-use interrupts::init_idt;
+pub mod gdt;
+pub mod interrupts;
+pub mod vga_buffer;
 
-mod gdt;
-mod interrupts;
-mod vga_buffer;
+use core::panic::PanicInfo;
+use vga_buffer::{set_print_color, ColorDesc};
+use crate::gdt::init_gdt;
+use crate::interrupts::{init_pic, init_idt};
+
+pub fn init() {
+    init_pic();
+    init_gdt();
+    init_idt();
+}
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    init_idt();
-    init_gdt();
-    println!("hello world");
+    init();
+
+    set_print_color(ColorDesc::new(vga_buffer::Color::White, vga_buffer::Color::Black));
+    println!("welcome.");
+
     loop {}
 }
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
-    print!("{}", _info);
+    println!("panic! {_info}");
+
     loop {}
 }
