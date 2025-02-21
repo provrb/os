@@ -11,12 +11,12 @@ pub mod vga_buffer;
 
 use crate::gdt::init_gdt;
 use crate::interrupts::{init_idt, init_pic};
+use alloc::{boxed::Box, rc::Rc, vec, vec::Vec};
 use bootloader::{entry_point, BootInfo};
 use core::panic::PanicInfo;
 use mem::BootInfoFrameAllocator;
 use vga_buffer::{set_print_color, ColorDesc};
 use x86_64::{structures::paging::PageTable, VirtAddr};
-use alloc::{boxed::Box, vec, vec::Vec, rc::Rc};
 
 pub fn init() {
     init_pic();
