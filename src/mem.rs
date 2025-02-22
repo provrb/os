@@ -1,5 +1,5 @@
-use core::alloc::{GlobalAlloc, Layout};
 use bootloader::bootinfo::MemoryMap;
+use core::alloc::{GlobalAlloc, Layout};
 use linked_list_allocator::LockedHeap;
 use x86_64::{
     structures::paging::{
@@ -77,7 +77,7 @@ impl<A> Lock<A> {
             inner: spin::Mutex::new(inner),
         }
     }
-    
+
     pub fn lock(&self) -> spin::MutexGuard<A> {
         self.inner.lock()
     }
