@@ -1,5 +1,5 @@
-use core::u8;
 use crate::cmos::{bcd_to_binary, CMOS_INSTANCE};
+use core::u8;
 
 #[derive(Debug)]
 pub struct DateTime {
@@ -26,7 +26,7 @@ impl DateTime {
     pub fn now() -> Self {
         // read time from CMOS
         let mut raw_time = unsafe { CMOS_INSTANCE.time_now() };
-        
+
         // if cmos isnt in bcd mode than just return as is
         if !unsafe { CMOS_INSTANCE.is_bcd_mode() } {
             return raw_time;

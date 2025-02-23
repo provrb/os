@@ -4,12 +4,12 @@
 
 extern crate alloc;
 
+mod cmos;
 pub mod gdt;
 pub mod interrupts;
 pub mod mem;
 pub mod time;
 pub mod vga_buffer;
-mod cmos;
 
 use crate::gdt::init_gdt;
 use crate::interrupts::{init_idt, init_pic};
@@ -35,15 +35,9 @@ pub fn init(boot_info: &'static BootInfo) {
 entry_point!(kernel_main);
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
     init(boot_info);
+    println!("hello");
 
-    // set_print_color(ColorDesc::new(
-    //     vga_buffer::Color::White,
-    //     vga_buffer::Color::Black,
-    // ));
-
-
-
-    println!("{:?}", DateTime::now());
+    gdt::enter_user_mode();
 
     loop {
         x86_64::instructions::hlt();

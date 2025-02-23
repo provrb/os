@@ -1,5 +1,5 @@
-use x86_64::instructions::port::Port;
 use crate::time::DateTime;
+use x86_64::instructions::port::Port;
 
 const CMOS_ADDR: u16 = 0x70; // write only
 const CMOS_DATA: u16 = 0x71; // read and write
@@ -54,8 +54,8 @@ impl CMOS {
         self.address_register.write(data);
     }
 
-    /// Read from the CMOS data register 
-    /// 
+    /// Read from the CMOS data register
+    ///
     /// This function is unsafe because .read can cause
     /// side effects that are not memory safe
     pub(crate) unsafe fn read_cmos(&mut self) -> u8 {
@@ -74,17 +74,19 @@ impl CMOS {
 
     /// Check the status b register
     /// Check bit 1, value = 2, 1 = hours are in 24 format
-    pub(crate) unsafe fn is_24_hour_format(&mut self) -> bool {
-        self.write_register(CMOSRTCRegister::StatusB.as_u8());
-        self.read_cmos() & 0x02 == 0
+    pub(crate) fn is_24_hour_format(&mut self) -> bool {
+        unsafe {
+            self.write_register(CMOSRTCRegister::StatusB.as_u8());
+            self.read_cmos() & 0x02 == 0
+        }
     }
 
     pub(crate) unsafe fn time_now(&mut self) -> DateTime {
-        let mut time = DateTime::default();
+        let mut time = DateTime::new(0, 0, 0, 0, 0, 0);
 
         self.write_register(CMOSRTCRegister::Seconds.as_u8()); // seconds
         time.second = self.read_cmos();
-        
+
         self.write_register(CMOSRTCRegister::Minutes.as_u8());
         time.minute = self.read_cmos();
 

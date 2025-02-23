@@ -1,22 +1,54 @@
 use bootloader::bootinfo::MemoryMap;
 use core::alloc::{GlobalAlloc, Layout};
-use linked_list_allocator::LockedHeap;
 use x86_64::{
     structures::paging::{
-        mapper::MapToError, FrameAllocator, Mapper, OffsetPageTable, Page, PageTable,
-        PageTableFlags, PhysFrame, Size4KiB,
+        mapper::{MapToError, MapperFlush},
+        FrameAllocator, Mapper, OffsetPageTable, Page, PageTable, PageTableFlags, PhysFrame,
+        Size4KiB,
     },
     PhysAddr, VirtAddr,
 };
 
 const HEAP_START: u64 = 0x4444_4444_0000;
 const HEAP_SIZE: u64 = 100 * 1024;
+pub const USER_ENTRY: u64 = 0x111_1111_0000;
+pub const USER_SIZE: u64 = 100 * 1024;
+pub const USER_STACK_TOP: u64 = 0x111_1112_0000; // Stack grows downward
+pub const USER_STACK_SIZE: u64 = 100 * 1024;
 
 #[global_allocator]
 static ALLOCATOR: Lock<LinkedAllocator> = Lock::new(LinkedAllocator::new());
 
 fn align_up(addr: usize, align: usize) -> usize {
     (addr + align - 1) & !(align - 1)
+}
+
+pub fn stack_init(
+    mapper: &mut impl Mapper<Size4KiB>,
+    frame_allocator: &mut impl FrameAllocator<Size4KiB>,
+) -> Result<(), MapToError<Size4KiB>> {
+    // Define the virtual address range for the user stack
+    let stack_start = VirtAddr::new(USER_STACK_TOP);  // Address for the top of the user stack
+    let stack_end = stack_start + USER_STACK_SIZE - 1u64; // Address for the bottom of the stack
+    let stack_start_page = Page::containing_address(stack_start);
+    let stack_end_page = Page::containing_address(stack_end);
+    
+    // Generate the page range for the stack
+    let stack_page_range = Page::range_inclusive(stack_start_page, stack_end_page);
+
+    // Map each page in the stack range to a physical frame
+    for page in stack_page_range {
+        let frame = frame_allocator
+            .allocate_frame()
+            .ok_or(MapToError::FrameAllocationFailed)?;
+        let flags = PageTableFlags::PRESENT | PageTableFlags::USER_ACCESSIBLE | PageTableFlags::WRITABLE;
+        
+        unsafe {
+            mapper.map_to(page, frame, flags, frame_allocator)?.flush();
+        }
+    }
+
+    Ok(())
 }
 
 pub fn heap_init(
@@ -35,7 +67,26 @@ pub fn heap_init(
         let frame = frame_allocator
             .allocate_frame()
             .ok_or(MapToError::FrameAllocationFailed)?;
-        let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
+        let flags: PageTableFlags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
+        unsafe {
+            mapper.map_to(page, frame, flags, frame_allocator)?.flush();
+        }
+    }
+
+    let user_page_range = {
+        let user_start = VirtAddr::new(USER_ENTRY);
+        let user_end = user_start + USER_SIZE - 1u64;
+        let user_start_page: Page = Page::containing_address(user_start);
+        let user_end_page: Page = Page::containing_address(user_end);
+        Page::range_inclusive(user_start_page, user_end_page)
+    };
+
+    for page in user_page_range {
+        let frame = frame_allocator
+            .allocate_frame()
+            .ok_or(MapToError::FrameAllocationFailed)?;
+        let flags =
+            PageTableFlags::PRESENT | PageTableFlags::USER_ACCESSIBLE | PageTableFlags::WRITABLE;
         unsafe {
             mapper.map_to(page, frame, flags, frame_allocator)?.flush();
         }
@@ -46,6 +97,8 @@ pub fn heap_init(
             .lock()
             .init(HEAP_START as usize, HEAP_SIZE as usize);
     }
+
+    stack_init(mapper, frame_allocator);
 
     Ok(())
 }

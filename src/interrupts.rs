@@ -26,6 +26,7 @@ lazy_static! {
 
         idt.breakpoint.set_handler_fn(breakpoint_handler);
         idt.page_fault.set_handler_fn(page_fault_handler);
+
         unsafe {
             idt.double_fault
                 .set_handler_fn(double_fault_handler)
