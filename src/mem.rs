@@ -98,7 +98,7 @@ pub fn heap_init(
             .init(HEAP_START as usize, HEAP_SIZE as usize);
     }
 
-    stack_init(mapper, frame_allocator);
+    // stack_init(mapper, frame_allocator);
 
     Ok(())
 }

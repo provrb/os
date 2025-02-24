@@ -1,4 +1,4 @@
-use core::arch::asm;
+use core::arch::{asm, global_asm};
 
 use lazy_static::lazy_static;
 use x86_64::structures::gdt::SegmentSelector;
@@ -67,21 +67,14 @@ pub fn init_gdt() {
 
     GDT.0.load();
     unsafe {
-        CS::set_reg(GDT.1.code_selector);
         load_tss(GDT.1.tss_selector);
     }
 }
 
 use x86_64::registers::rflags::RFlags;
 
+use crate::mem::USER_ENTRY;
 use crate::{gdt, println};
-
-#[no_mangle]
-#[link_section = ".user_text"]
-pub extern "C" fn user_main() -> ! {
-    // User mode code.
-    loop {}
-}
 
 /// Switch to user mode using iretq
 pub fn enter_user_mode() -> ! {
@@ -106,9 +99,16 @@ pub fn enter_user_mode() -> ! {
             in(reg) USER_STACK_TOP,
             in(reg) user_ds,  // Load User Data Segment dynamically
             in(reg) user_cs,  // Load User Code Segment dynamically
-            in(reg) USER_ENTRY,
+            in(reg) user_main,
             options(noreturn)
         );
     }
     
+}
+
+#[no_mangle]
+pub extern "C" fn user_main() -> ! {
+    // User mode code.
+    println!("hello from ring 3");
+    loop {}
 }
